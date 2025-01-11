@@ -28,7 +28,7 @@ from gymnasium.wrappers import TimeLimit, TransformObservation
 from coolname import generate_slug
 from tqdm.rich import trange, tqdm
 
-DISABLE_WANDB = False
+DISABLE_WANDB = True
 try:
     import wandb
 except ImportError:

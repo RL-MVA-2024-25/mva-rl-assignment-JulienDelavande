@@ -6,7 +6,8 @@ import torch
 
 from evaluate import evaluate_HIV, evaluate_HIV_population
 #from train_qlearning import ProjectAgent  # Replace DummyAgent with your agent implementation
-from train_dqn import ProjectAgent  # Replace DummyAgent with your agent implementation
+#from train_dqn import ProjectAgent  # Replace DummyAgent with your agent implementation
+from train_dqn_new import ProjectAgent  # Replace DummyAgent with your agent implementation
 
 
 def seed_everything(seed: int = 42):
@@ -28,8 +29,10 @@ if __name__ == "__main__":
         state_dim = 6
         action_space = 4
 
-        agent = ProjectAgent(state_dim=state_dim, action_space=action_space)
-        agent.load("dqn_model.pth")
+        #agent = ProjectAgent(state_dim=state_dim, action_space=action_space)
+        agent = ProjectAgent()
+        #agent.load("dqn_model.pth")
+        agent.load("dmodel_dqn_new.pth")
         # Evaluate agent and write score.
         score_agent: float = evaluate_HIV(agent=agent, nb_episode=5)
         print(f"Score agent: {score_agent}")

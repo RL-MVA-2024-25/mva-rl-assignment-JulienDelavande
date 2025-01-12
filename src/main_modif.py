@@ -32,7 +32,7 @@ if __name__ == "__main__":
         #agent = ProjectAgent(state_dim=state_dim, action_space=action_space)
         agent = ProjectAgent()
         #agent.load("dqn_model.pth")
-        agent.load("dmodel_dqn_new.pth")
+        agent.load()
         # Evaluate agent and write score.
         score_agent: float = evaluate_HIV(agent=agent, nb_episode=5)
         print(f"Score agent: {score_agent}")

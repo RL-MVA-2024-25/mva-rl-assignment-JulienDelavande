@@ -99,8 +99,8 @@ class ProjectAgent:
         self.criterion = torch.nn.SmoothL1Loss()               # Loss function
         
         self.path = os.path.join(os.path.dirname(__file__), args.model if args is not None else MODEL_PATH)
-        self.nb_actions =  OBSERVATION_SPACE # env.action_space.n,                           # 4 
-        self.observation_space = ACTION_SPACE # env.observation_space.shape[0],        # 6
+        self.nb_actions =  ACTION_SPACE # env.action_space.n,                           # 4 
+        self.observation_space =OBSERVATION_SPACE # env.observation_space.shape[0],        # 6
         
         
         self.epsilon_step = (self.epsilon_max-self.epsilon_min)/self.epsilon_stop
@@ -197,8 +197,10 @@ class ProjectAgent:
             # Epsilon greedy policy
             if step > self.epsilon_delay:
                 epsilon = max(self.epsilon_min, epsilon-self.epsilon_step)
-                if np.random.rand() < epsilon:
-                    action = env.action_space.sample()
+                
+            # Choose an action
+            if np.random.rand() < epsilon:
+                action = env.action_space.sample()
             else:
                 action = self.act(state)
 
@@ -218,7 +220,7 @@ class ProjectAgent:
             # Update the state
             if done or trunc:
                 episode += 1
-                val_score = evaluate_agent(self, env=TimeLimit(FastHIVPatient(domain_randomization=False) if args.fast_env else HIVPatient(domain_randomization=False),
+                val_score = evaluate_agent(self, env=TimeLimit(FastHIVPatient(domain_randomization=False) if args.fast else HIVPatient(domain_randomization=False),
                                                                  max_episode_steps=MAX_EPISODES_STEPS), nb_episode=1)
                 print("Episode ", '{:3d}'.format(episode),
                       ", epsilon ", '{:6.2f}'.format(epsilon),

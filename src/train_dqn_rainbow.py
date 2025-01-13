@@ -747,12 +747,12 @@ if __name__ == "__main__":
     parser.add_argument("--neurons", type=int, default=NEURONS)
 
     # Rainbow toggles
-    parser.add_argument("--double", action="store_true", default=DOUBLE, help="Use Double DQN")
-    parser.add_argument("--dueling", action="store_true", default=DUELING, help="Use Dueling DQN")
-    parser.add_argument("--noisy", action="store_true", default=NOISY, help="Use Noisy Networks")
-    parser.add_argument("--prioritized", action="store_true", default=PRIORITIZED, help="Use Prioritized Replay")
+    parser.add_argument("--double", type=bool, default=DOUBLE, help="Use Double DQN")
+    parser.add_argument("--dueling", type=bool, default=DUELING, help="Use Dueling DQN")
+    parser.add_argument("--noisy", type=bool, default=NOISY, help="Use Noisy Networks")
+    parser.add_argument("--prioritized", type=bool, default=PRIORITIZED, help="Use Prioritized Replay")
     parser.add_argument("--n_step", type=int, default=N_STEP, help="N-step returns")
-    parser.add_argument("--distributional", action="store_true", default=DISTRIBUTIONAL, help="Use Distributional RL (C51)")
+    parser.add_argument("--distributional", type=bool, default=DISTRIBUTIONAL, help="Use Distributional RL (C51)")
     parser.add_argument("--atoms", type=int, default=ATOMS, help="Number of atoms for C51")
     parser.add_argument("--v_min", type=float, default=V_MIN, help="Min value for distributional support")
     parser.add_argument("--v_max", type=float, default=V_MAX, help="Max value for distributional support")
@@ -776,3 +776,8 @@ if __name__ == "__main__":
     print(returns)
     agent.save(args.model)
     print(f"Model saved at {args.model}")
+
+# ### !python src/train.py --model {MODEL_PATH} --episodes {EPISODES} --domain_randomization {DOMAIN_RANDOMIZATION} --learning_rate {LEARNING_RATE} --gamma {GAMMA} \
+#     --buffer_size {BUFFER_SIZE} --epsilon_min {EPSILON_MIN} --epsilon_max {EPSILON_MAX} --epsilon_decay_period {EPSILON_DECAY_PERIOD} --epsilon_delay_decay {EPSILON_DELAY_DECAY} \
+#     --batch_size {BATCH_SIZE} --gradient_steps {GRADIENT_STEPS} --double {DOUBLE_DQN} --update_target_freq {UPDATE_TARGET_FREQ} --fast {FAST_ENV} --neurons {NEURONS} --nb_episodes_test {NB_EPSIODES_TEST} \
+#     --dueling {DUELING} --noisy {NOISY} --prioritized {PRIORITIZED} --n_step {N_STEP} --distributional {DISTRIBUTIONAL} --atoms {ATOMS} --v_min {V_MIN} --v_max {V_MAX}

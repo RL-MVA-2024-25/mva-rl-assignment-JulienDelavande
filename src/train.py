@@ -87,6 +87,7 @@ class ProjectAgent:
     
     def __init__(self, args=None):
         self.episodes = args.episodes if args is not None else EPISODES
+        self.nb_episodes_test = args.nb_episodes_test if args is not None else NB_EPSIODES_TEST
         self.gamma = args.gamma if args is not None else GAMMA                                      # 0.99 default value     ## discount factor
         self.batch_size = args.batch_size if args is not None else BATCH_SIZE                       # 512 default value      ## batch size
         buffer_size = args.buffer_size if args is not None else BUFFER_SIZE                       # 100_000 default value   ## buffer size

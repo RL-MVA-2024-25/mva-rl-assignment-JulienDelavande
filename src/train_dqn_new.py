@@ -85,6 +85,7 @@ The training was done on 200 episodes, but the best models were obtained after 1
 class ProjectAgent:
     
     def __init__(self, args=None):
+        self.episodes = args.episodes if args is not None else EPISODES
         self.gamma = args.gamma if args is not None else GAMMA                                      # 0.99 default value     ## discount factor
         self.batch_size = args.batch_size if args is not None else BATCH_SIZE                       # 512 default value      ## batch size
         buffer_size = args.buffer_size if args is not None else BUFFER_SIZE                       # 100000 default value   ## buffer size
@@ -181,7 +182,7 @@ class ProjectAgent:
             loss.backward()
             self.optimizer.step()
 
-    def train(self, env, max_episode=EPISODES):
+    def train(self, env):
         episode_return = []
         episode = 0
         episode_cum_reward = 0
@@ -192,7 +193,7 @@ class ProjectAgent:
         # Keep the score on the chosen patient
         # to get the model with the best result
         score = 0
-        while episode < max_episode:
+        while episode < self.episodes:
             
             # Epsilon greedy policy
             if step > self.epsilon_delay:

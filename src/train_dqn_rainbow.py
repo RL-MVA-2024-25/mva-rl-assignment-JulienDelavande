@@ -731,8 +731,8 @@ if __name__ == "__main__":
     # Expérimentation
     parser.add_argument("--episodes", type=int, default=EPISODES, help="Number of episodes to train")
     parser.add_argument("--nb_episodes_test", type=int, default=NB_EPSIODES_TEST, help="Number of episodes to test")
-    parser.add_argument("--domain_randomization", action="store_true", default=DOMAIN_RANDOMIZATION)
-    parser.add_argument("--fast", action="store_true", default=False)
+    parser.add_argument("--domain_randomization", type=bool, default=DOMAIN_RANDOMIZATION)
+    parser.add_argument("--fast", type=bool, default=False)
     # Hyperparams
     parser.add_argument("--learning_rate", type=float, default=LEARNING_RATE)
     parser.add_argument("--gamma", type=float, default=GAMMA)

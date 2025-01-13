@@ -61,17 +61,21 @@ class ReplayBuffer:
         self.data = []
         self.index = 0 # index of the next cell to be filled
         self.device = device
+        self.size = 0
         self.obs_means = np.zeros(OBSERVATION_SPACE)
         self.obs_stds = np.ones(OBSERVATION_SPACE)
     def append(self, s, a, r, s_, d):
         if len(self.data) < self.capacity:
             self.data.append(None)
         self.data[self.index] = (s, a, r, s_, d)
+        self.size = min(self.size + 1, self.capacity)
         self.index = (self.index + 1) % self.capacity
         
         # Update the running mean and std
-        self.obs_means = np.mean(self.data[:self.index][0], axis=0)
-        self.obs_stds = np.std(self.data[:self.index][0], axis=0)
+        observations = np.array([item[0] for item in self.data[:self.size]])
+        self.obs_means = np.mean(observations, axis=0)
+        self.obs_stds = np.std(observations, axis=0)
+
         
     def sample(self, batch_size):
         batch = random.sample(self.data, batch_size)

@@ -90,11 +90,14 @@ class NoisyLinear(nn.Module):
         self.bias_sigma.data.fill_(sigma_init / math.sqrt(self.in_features))
 
     def reset_noise(self):
-        # Facteur d'échantillonnage factorisé (Fortunato et al.)
-        eps_in = self._scale_noise(self.in_features)
-        eps_out = self._scale_noise(self.out_features)
-        self.weight_epsilon = eps_out.ger(eps_in)
-        self.bias_epsilon = eps_out
+        # Important : on récupère le device en interrogeant l'un des paramètres/buffers
+        device = self.weight_mu.device
+        eps_in = self._scale_noise(self.in_features).to(device)
+        eps_out = self._scale_noise(self.out_features).to(device)
+
+        # On recopie dans les buffers, déjà enregistrés
+        self.weight_epsilon = eps_out.ger(eps_in)  # shape [out_features, in_features]
+        self.bias_epsilon = eps_out  # shape [out_features]
 
     def forward(self, x):
         if self.training:

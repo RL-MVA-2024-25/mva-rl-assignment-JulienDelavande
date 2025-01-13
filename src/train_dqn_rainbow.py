@@ -543,18 +543,28 @@ class ProjectAgent:
         # Initialiser la distribution projetée
         proj_dist = torch.zeros_like(next_dist, device=DEVICE)
         for i in range(self.atoms):
-            # On ajoute la masse de l'atome i
-            # pour chaque batch item
-            offset = torch.arange(0, batch_size, device=DEVICE) * self.atoms
-            offset = offset.unsqueeze(1).expand(batch_size, self.atoms)
-            l_index = (l + offset).view(-1)
-            u_index = (u + offset).view(-1)
+            # offset = [0, atoms, 2*atoms, ...] pour indexer proj_dist.view(-1)
+            offset = torch.arange(0, batch_size, device=next_dist.device) * self.atoms
+            
+            # l[:, i] et u[:, i] => shape [B], 
+            # on leur ajoute offset => shape [B] d'indices pour la version "flatten"
+            l_index = (l[:, i] + offset).long()
+            u_index = (u[:, i] + offset).long()
+
+            # Masse à injecter dans proj_dist :
+            # next_dist[:, i] => shape [B]
+            # (u[:, i].float() - b[:, i]) => shape [B]
+            # => produit => shape [B]
+            proj_dist.view(-1).index_add_(
+                0,
+                l_index,
+                next_dist[:, i] * (u[:, i].float() - b[:, i])
+            )
 
             proj_dist.view(-1).index_add_(
-                0, l_index, next_dist[:, i] * (u.float() - b).view(-1)
-            )
-            proj_dist.view(-1).index_add_(
-                0, u_index, next_dist[:, i] * (b - l.float()).view(-1)
+                0,
+                u_index,
+                next_dist[:, i] * (b[:, i] - l[:, i].float())
             )
         return proj_dist
 

@@ -71,8 +71,9 @@ class NoisyLinear(nn.Module):
         self.bias_sigma = nn.Parameter(torch.Tensor(out_features))
 
         # Tensors non-trainables
-        self.register_buffer('weight_epsilon', torch.zeros(out_features, in_features))
-        self.register_buffer('bias_epsilon', torch.zeros(out_features))
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.register_buffer('weight_epsilon', torch.zeros(out_features, in_features, device=device))
+        self.register_buffer('bias_epsilon', torch.zeros(out_features, device=device))
 
         # Initialisation des poids
         self.reset_parameters(sigma_init)

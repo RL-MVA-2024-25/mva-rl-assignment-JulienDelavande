@@ -249,8 +249,6 @@ class ProjectAgent:
                       ", memory size ", '{:5d}'.format(len(self.memory)),
                       ", episode return ", '{:2e}'.format(episode_cum_reward),
                       ", Evaluation score  ", '{:2e}'.format(val_score),
-                      ", means observation ", self.memory.obs_means,
-                        ", stds observation ", self.memory.obs_stds,
                       sep='')
                 state, _ = env.reset()
                 
@@ -318,5 +316,6 @@ if __name__ == "__main__":
     print(episode_return)
     agent.save(args.model)
     print(f"Model saved at {args.model}")
+    print(f'Best model score: {max(episode_return)}')
 
 ## python src/train_dqn_new.py --model dqn.pt --episodes {EPISODES} --domain_randomization False --learning_rate {LEARNING_RATE} --gamma {GAMMA} --buffer_size {BUFFER_SIZE} --epsilon_min {EPSILON_MIN} --epsilon_max {EPSILON_MAX} --epsilon_decay_period {EPSILON_DECAY_PERIOD} --epsilon_delay_decay {EPSILON_DELAY_DECAY} --batch_size {BATCH_SIZE} --gradient_steps {GRADIENT_STEPS} --double False --update_target_freq {UPDATE_TARGET_FREQ} --fast True --neurons {NEURONS}

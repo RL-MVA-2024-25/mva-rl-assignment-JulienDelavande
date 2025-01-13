@@ -11,6 +11,11 @@ import torch.nn as nn
 from copy import deepcopy
 import os
 
+try:
+    from env_hiv_new import FastHIVPatient
+except:
+    pass
+
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 EPISODES = 200
 DOMAIN_RANDOMIZATION = False
@@ -127,8 +132,7 @@ class ProjectAgent:
         self.obs_means = np.zeros(self.observation_space)
         self.obs_stds = np.ones(self.observation_space)
         
-        if (args is not None and args.fast) or (args is None and FAST_ENV):
-            from env_hiv_new import FastHIVPatient
+            
         
         
     def act(self, observation, use_random=False):

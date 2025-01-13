@@ -271,8 +271,8 @@ class ProjectAgent:
     def _normalize_state(self, state):
         # Standardisation avec moyenne et écart-type (ajuster ces valeurs)
         # running mean and std
-        state_mean = self.memory.obs_means
-        state_std = self.memory.obs_stds
+        state_mean = self.memory.obs_means.to(DEVICE)
+        state_std = self.memory.obs_stds.to(DEVICE)
         return (state - state_mean) / (state_std + 1e-8)
 
 

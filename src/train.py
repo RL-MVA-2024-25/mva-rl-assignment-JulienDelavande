@@ -225,7 +225,7 @@ class ProjectAgent:
                                                                  max_episode_steps=MAX_EPISODES_STEPS), nb_episode=1)
                 print("Episode ", '{:3d}'.format(episode),
                       ", epsilon ", '{:6.2f}'.format(epsilon),
-                      ", batch size ", '{:5d}'.format(len(self.memory)),
+                      ", memory size ", '{:5d}'.format(len(self.memory)),
                       ", episode return ", '{:2e}'.format(episode_cum_reward),
                       ", Evaluation score  ", '{:2e}'.format(val_score),
                       sep='')

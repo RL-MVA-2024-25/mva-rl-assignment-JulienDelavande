@@ -224,7 +224,7 @@ class ProjectAgent:
             if done or trunc:
                 episode += 1
                 val_score = evaluate_agent(self, env=TimeLimit(FastHIVPatient(domain_randomization=False) if args.fast else HIVPatient(domain_randomization=False),
-                                                                 max_episode_steps=MAX_EPISODES_STEPS), nb_episode=NB_EPSIODES_TEST)
+                                                                 max_episode_steps=MAX_EPISODES_STEPS), nb_episode=self.nb_episodes_test)
                 print("Episode ", '{:3d}'.format(episode),
                       ", epsilon ", '{:6.2f}'.format(epsilon),
                       ", memory size ", '{:5d}'.format(len(self.memory)),
@@ -266,7 +266,7 @@ if __name__ == "__main__":
     parser.add_argument("--update_target_freq", type=int, default=UPDATE_TARGET_FREQ, help="Update target network frequency")
     parser.add_argument("--fast", type=bool, default=FAST_ENV, help="Use fast environment")
     parser.add_argument("--neurons", type=int, default=NEURONS, help="Number of input neurons for the model")
-    parser.add_argument("--nb_episodes_test", type=int, default=10, help="Number of episodes to test the model")
+    parser.add_argument("--nb_episodes_test", type=int, default=NB_EPSIODES_TEST, help="Number of episodes to test the model")
     args = parser.parse_args()
     
     

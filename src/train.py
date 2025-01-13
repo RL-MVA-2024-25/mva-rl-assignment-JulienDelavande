@@ -28,7 +28,7 @@ NEURONS = 256
 MODEL_PATH = "dqn.pt"
 
 DOUBLE_DQN = False
-FAST_ENV = True
+FAST_ENV = False
 
 OBSERVATION_SPACE = 6
 ACTION_SPACE = 4
@@ -112,7 +112,7 @@ class ProjectAgent:
         self.target_model = deepcopy(self.model).to(DEVICE)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=lr) # Standard optimizer
         
-        if args.fast:
+        if (args is not None and args.fast) or (args is None and FAST_ENV):
             from env_hiv_new import FastHIVPatient
         
         

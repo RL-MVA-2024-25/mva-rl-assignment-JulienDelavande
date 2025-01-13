@@ -34,6 +34,7 @@ OBSERVATION_SPACE = 6
 ACTION_SPACE = 4
 
 MAX_EPISODES_STEPS = 200
+NB_EPSIODES_TEST = 1
 
 
 '''
@@ -88,10 +89,10 @@ class ProjectAgent:
         self.episodes = args.episodes if args is not None else EPISODES
         self.gamma = args.gamma if args is not None else GAMMA                                      # 0.99 default value     ## discount factor
         self.batch_size = args.batch_size if args is not None else BATCH_SIZE                       # 512 default value      ## batch size
-        buffer_size = args.buffer_size if args is not None else BUFFER_SIZE                       # 100000 default value   ## buffer size
+        buffer_size = args.buffer_size if args is not None else BUFFER_SIZE                       # 100_000 default value   ## buffer size
         self.epsilon_max = args.epsilon_max if args is not None else EPSILON_MAX                   # 1. default value       ## epsilon greedy
         self.epsilon_min = args.epsilon_min if args is not None else EPSILON_MIN                 # 0.01 default value     ## epsilon greedy
-        self.epsilon_stop = args.epsilon_decay_period if args is not None else EPSILON_DECAY_PERIOD        # 10000 default value    ## epsilon decay period
+        self.epsilon_stop = args.epsilon_decay_period if args is not None else EPSILON_DECAY_PERIOD        # 10_000 default value    ## epsilon decay period
         self.epsilon_delay = args.epsilon_delay_decay if args is not None else EPSILON_DELAY_DECAY        # 100 default value      ## epsilon delay decay
         lr = args.learning_rate if args is not None else LEARNING_RATE                             # 0.001 default value    ## learning rate
         self.nb_gradient_steps = args.gradient_steps if args is not None else GRADIENT_STEPS           # 3 default value        ## gradient steps
@@ -222,7 +223,7 @@ class ProjectAgent:
             if done or trunc:
                 episode += 1
                 val_score = evaluate_agent(self, env=TimeLimit(FastHIVPatient(domain_randomization=False) if args.fast else HIVPatient(domain_randomization=False),
-                                                                 max_episode_steps=MAX_EPISODES_STEPS), nb_episode=1)
+                                                                 max_episode_steps=MAX_EPISODES_STEPS), nb_episode=NB_EPSIODES_TEST)
                 print("Episode ", '{:3d}'.format(episode),
                       ", epsilon ", '{:6.2f}'.format(epsilon),
                       ", memory size ", '{:5d}'.format(len(self.memory)),
@@ -264,6 +265,7 @@ if __name__ == "__main__":
     parser.add_argument("--update_target_freq", type=int, default=UPDATE_TARGET_FREQ, help="Update target network frequency")
     parser.add_argument("--fast", type=bool, default=FAST_ENV, help="Use fast environment")
     parser.add_argument("--neurons", type=int, default=NEURONS, help="Number of input neurons for the model")
+    parser.add_argument("--nb_episodes_test", type=int, default=10, help="Number of episodes to test the model")
     args = parser.parse_args()
     
     

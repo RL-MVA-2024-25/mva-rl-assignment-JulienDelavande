@@ -11,12 +11,30 @@ import torch.nn as nn
 from copy import deepcopy
 import os
 
-env = TimeLimit(
-    env=HIVPatient(domain_randomization=False), max_episode_steps=200
-)  # The time wrapper limits the number of steps in an episode at 200.
-# Now is the floor is yours to implement the agent and train it.
-
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+EPISODES = 200
+DOMAIN_RANDOMIZATION = False
+GAMMA = 0.99
+BATCH_SIZE = 512
+BUFFER_SIZE = 1e5
+EPSILON_MAX = 1.
+EPSILON_MIN = 0.01
+EPSILON_DECAY_PERIOD = 1e4
+EPSILON_DELAY_DECAY = 100
+LEARNING_RATE = 1e-3
+GRADIENT_STEPS = 3
+UPDATE_TARGET_FREQ = 200
+NEURONS = 256
+MODEL_PATH = "dqn.pt"
+
+DOUBLE_DQN = False
+FAST_ENV = True
+
+OBSERVATION_SPACE = 6
+ACTION_SPACE = 4
+
+MAX_EPISODES_STEPS = 200
+
 
 '''
 First, we need to define buffer allowing us
@@ -63,9 +81,35 @@ The batch sizes were increased to 512 to allow for better generalization (as the
 and the number of gradient steps was increased to 3 to allow for better convergence
 The training was done on 200 episodes, but the best models were obtained after 100 episodes in general.
 '''
-    
 
 class ProjectAgent:
+    
+    def __init__(self, args=None):
+        self.gamma = args.gamma if args is not None else GAMMA                                      # 0.99 default value     ## discount factor
+        self.batch_size = args.batch_size if args is not None else BATCH_SIZE                       # 512 default value      ## batch size
+        buffer_size = args.buffer_size if args is not None else BUFFER_SIZE                       # 100000 default value   ## buffer size
+        self.epsilon_max = args.epsilon_max if args is not None else EPSILON_MAX                   # 1. default value       ## epsilon greedy
+        self.epsilon_min = args.epsilon_min if args is not None else EPSILON_MIN                 # 0.01 default value     ## epsilon greedy
+        self.epsilon_stop = args.epsilon_decay_period if args is not None else EPSILON_DECAY_PERIOD        # 10000 default value    ## epsilon decay period
+        self.epsilon_delay = args.epsilon_delay_decay if args is not None else EPSILON_DELAY_DECAY        # 100 default value      ## epsilon delay decay
+        lr = args.learning_rate if args is not None else LEARNING_RATE                             # 0.001 default value    ## learning rate
+        self.nb_gradient_steps = args.gradient_steps if args is not None else GRADIENT_STEPS           # 3 default value        ## gradient steps
+        self.update_target_freq = args.update_target_freq if args is not None else UPDATE_TARGET_FREQ    # 200 default value      ## update target NET frequency
+        self.neurons = args.neurons if args is not None else NEURONS                          # 256 default value      ## number of neurons
+        self.criterion = torch.nn.SmoothL1Loss()               # Loss function
+        
+        self.path = os.path.join(os.path.dirname(__file__), args.model if args is not None else MODEL_PATH)
+        self.nb_actions =  OBSERVATION_SPACE # env.action_space.n,                           # 4 
+        self.observation_space = ACTION_SPACE # env.observation_space.shape[0],        # 6
+        
+        
+        self.epsilon_step = (self.epsilon_max-self.epsilon_min)/self.epsilon_stop
+        self.memory = ReplayBuffer(buffer_size, DEVICE)
+        self.model = self.get_DQN()
+        self.target_model = deepcopy(self.model).to(DEVICE)
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=lr) # Standard optimizer
+        
+        
     def act(self, observation, use_random=False):
         device = "cuda" if next(self.model.parameters()).is_cuda else "cpu"
         with torch.no_grad():
@@ -79,32 +123,16 @@ class ProjectAgent:
         cpu_device = torch.device("cpu")
         DQN = self.get_DQN()
         self.model = DQN.to(cpu_device)
-        self.model.load_state_dict(torch.load("src/model_dqn_new2.pt", map_location=cpu_device, weights_only=True))
+        self.model.load_state_dict(torch.load(self.path, map_location=cpu_device, weights_only=True))
         self.model.eval()
         return
 
-    def get_config(self):
-      # Setting the configuration dictionnary for the model
-      self.config = {'n_action': env.action_space.n,
-          'state_dim': env.observation_space.shape[0],
-          'learning_rate': 0.001,
-          'gamma': 0.99, 
-          'buffer_size': 100000, # We get a smaller buffer size memory to not overload the computer
-          'epsilon_min': 0.01,
-          'epsilon_max': 1., # Pure random exploration at the beginning
-          'epsilon_decay_period': 10000,
-          'epsilon_delay_decay': 100,
-          'batch_size': 512,
-          'gradient_steps': 3, 
-          'update_target_freq': 200,
-          'criterion': torch.nn.SmoothL1Loss()}
-      return
 
     def get_DQN(self):
         # Defining an instance of the DQN model tested
-        state_dim = self.config['state_dim']
+        state_dim = self.observation_space
         n_action = self.nb_actions
-        nb_neurons = 256
+        nb_neurons = self.neurons
         DQN = torch.nn.Sequential(
             nn.Linear(state_dim, nb_neurons),
             nn.ReLU(),
@@ -120,29 +148,6 @@ class ProjectAgent:
         ).to(DEVICE)
         return DQN
 
-    def __init__(self):
-        # Simple initialization of the agent with the configuration
-        self.get_config()
-        self.path = os.path.join(os.path.dirname(__file__), "model_dqn_new2.pt")
-        self.nb_actions = self.config['n_action']
-        self.model = self.get_DQN()
-        self.gamma = self.config['gamma']
-        self.batch_size = self.config['batch_size']
-        buffer_size = self.config['buffer_size']
-        self.memory = ReplayBuffer(buffer_size,DEVICE)
-        self.epsilon_max = self.config['epsilon_max']
-        self.epsilon_min = self.config['epsilon_min']
-        self.epsilon_stop = self.config['epsilon_decay_period']
-        self.epsilon_delay = self.config['epsilon_delay_decay']
-        self.epsilon_step = (self.epsilon_max-self.epsilon_min)/self.epsilon_stop
-        self.target_model = deepcopy(self.model).to(DEVICE)
-        self.criterion = self.config['criterion']
-        lr = self.config['learning_rate']
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=lr) # Standard optimizer
-        self.nb_gradient_steps = self.config['gradient_steps']
-        # Using the replace strategy
-        # replacing the target network every  200 steps by the current model
-        self.update_target_freq = self.config['update_target_freq']
 
     def gradient_step(self):
         if len(self.memory) > self.batch_size:
@@ -176,7 +181,7 @@ class ProjectAgent:
             loss.backward()
             self.optimizer.step()
 
-    def train(self, env, max_episode=200):
+    def train(self, env, max_episode=EPISODES):
         episode_return = []
         episode = 0
         episode_cum_reward = 0
@@ -188,27 +193,33 @@ class ProjectAgent:
         # to get the model with the best result
         score = 0
         while episode < max_episode:
+            
+            # Epsilon greedy policy
             if step > self.epsilon_delay:
                 epsilon = max(self.epsilon_min, epsilon-self.epsilon_step)
-            if np.random.rand() < epsilon:
-                action = env.action_space.sample()
+                if np.random.rand() < epsilon:
+                    action = env.action_space.sample()
             else:
                 action = self.act(state)
 
+            # Take a step in the environment
             next_state, reward, done, trunc, _ = env.step(action)
             self.memory.append(state, action, reward, next_state, done)
             episode_cum_reward += reward
 
+            # Update the model
             for _ in range(self.nb_gradient_steps):
                 self.gradient_step()
 
+            # Update the target model
             if step % self.update_target_freq == 0:
                 self.target_model.load_state_dict(self.model.state_dict())
-            step += 1
+                
+            # Update the state
             if done or trunc:
                 episode += 1
-                #val_score = evaluate_HIV(agent=self, nb_episode=1)
-                val_score = evaluate_agent(self, env=TimeLimit(HIVPatient(), max_episode_steps=200), nb_episode=1)
+                val_score = evaluate_agent(self, env=TimeLimit(FastHIVPatient(domain_randomization=False) if args.fast_env else HIVPatient(domain_randomization=False),
+                                                                 max_episode_steps=MAX_EPISODES_STEPS), nb_episode=1)
                 print("Episode ", '{:3d}'.format(episode),
                       ", epsilon ", '{:6.2f}'.format(epsilon),
                       ", batch size ", '{:5d}'.format(len(self.memory)),
@@ -216,23 +227,56 @@ class ProjectAgent:
                       ", Evaluation score  ", '{:2e}'.format(val_score),
                       sep='')
                 state, _ = env.reset()
+                
+                # Save the model if the score is better
                 if val_score > score:
                   score = val_score
                   self.best_model = deepcopy(self.model).to(DEVICE)
                   self.save(self.path)
+                  
                 episode_return.append(episode_cum_reward)
                 episode_cum_reward = 0
             else:
                 state = next_state
+                
+            step += 1
         return episode_return
 
 if __name__ == "__main__":
-    agent = ProjectAgent()
-    env = TimeLimit(
-    env=HIVPatient(domain_randomization=False), max_episode_steps=120
-    )
+    from argparse import ArgumentParser
+    parser = ArgumentParser()
+    parser.add_argument("--model", type=str, default=MODEL_PATH, help="Path to save the model")
+    parser.add_argument("--episodes", type=int, default=EPISODES, help="Number of episodes to train the model")
+    parser.add_argument("--domain_randomization", type=bool, default=DOMAIN_RANDOMIZATION, help="Domain randomization for training")
+    parser.add_argument("--learning_rate", type=float, default=LEARNING_RATE, help="Learning rate for the model")
+    parser.add_argument("--gamma", type=float, default=GAMMA, help="Discount factor for the model")
+    parser.add_argument("--buffer_size", type=int, default=BUFFER_SIZE, help="Size of the replay buffer")
+    parser.add_argument("--epsilon_min", type=float, default=EPSILON_MIN, help="Minimum epsilon value for epsilon greedy")
+    parser.add_argument("--epsilon_max", type=float, default=EPSILON_MAX, help="Maximum epsilon value for epsilon greedy")
+    parser.add_argument("--epsilon_decay_period", type=int, default=EPSILON_DECAY_PERIOD, help="Epsilon decay period (wait X steps before decay)")
+    parser.add_argument("--epsilon_delay_decay", type=int, default=EPSILON_DELAY_DECAY, help="Epsilon delay decay (wait X steps before decay)")
+    parser.add_argument("--batch_size", type=int, default=BATCH_SIZE, help="Batch size for the model")
+    parser.add_argument("--gradient_steps", type=int, default=GRADIENT_STEPS, help="Number of gradient steps for the model for each episode")
+    parser.add_argument("--double", type=bool, default=DOUBLE_DQN, help="Use Double DQN model")
+    parser.add_argument("--update_target_freq", type=int, default=UPDATE_TARGET_FREQ, help="Update target network frequency")
+    parser.add_argument("--fast", type=bool, default=FAST_ENV, help="Use fast environment")
+    parser.add_argument("--neurons", type=int, default=NEURONS, help="Number of input neurons for the model")
+    args = parser.parse_args()
+    
+    
+    agent = ProjectAgent(args)
+    
+    if args.fast:
+        env = TimeLimit(
+        env=FastHIVPatient(domain_randomization=args.domain_randomization), max_episode_steps=200
+        )
+    else:
+        env = TimeLimit(
+        env=HIVPatient(domain_randomization=False), max_episode_steps=120
+        )
+        
     episode_return = agent.train(env)
     print(episode_return)
-    agent.save("model_dqn_new2.pt")
-    print("Model saved")
+    agent.save(args.model)
+    print(f"Model saved at {args.model}")
 

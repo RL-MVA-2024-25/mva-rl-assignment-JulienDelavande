@@ -1,7 +1,7 @@
 from gymnasium.wrappers import TimeLimit
 from env_hiv import HIVPatient
 from evaluate import evaluate_HIV, evaluate_agent
-from env_hiv_new import FastHIVPatient
+
 from functools import partial
 
 import random
@@ -111,6 +111,9 @@ class ProjectAgent:
         self.model = self.get_DQN()
         self.target_model = deepcopy(self.model).to(DEVICE)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=lr) # Standard optimizer
+        
+        if args.fast:
+            from env_hiv_new import FastHIVPatient
         
         
     def act(self, observation, use_random=False):

@@ -118,8 +118,9 @@ class FQI(Agent):
             targets = rewards + self.gamma * max_next_Q * (1 - dones)
 
             # Train the model
-            X_train = np.array(states)
+            Q_values = np.zeros((len(states), env.action_space.n))
             y_train = Q_values.copy()
+            X_train = np.array(states)
             for i, action in enumerate(actions):
                 y_train[i, action] = targets[i]
 

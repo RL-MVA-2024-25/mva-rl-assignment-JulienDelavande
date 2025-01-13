@@ -27,6 +27,9 @@ UPDATE_TARGET_FREQ = 200
 NEURONS = 256
 MODEL_PATH = "dqn.pt"
 
+SCALE_REWARD = int(1e9)
+SCALE_OBSERVATION = True
+
 DOUBLE_DQN = False
 FAST_ENV = False
 
@@ -53,11 +56,18 @@ class ReplayBuffer:
         self.data = []
         self.index = 0 # index of the next cell to be filled
         self.device = device
+        self.obs_means = np.zeros(OBSERVATION_SPACE)
+        self.obs_stds = np.ones(OBSERVATION_SPACE)
     def append(self, s, a, r, s_, d):
         if len(self.data) < self.capacity:
             self.data.append(None)
         self.data[self.index] = (s, a, r, s_, d)
         self.index = (self.index + 1) % self.capacity
+        
+        # Update the running mean and std
+        self.obs_means = np.mean(self.data[:self.index][0], axis=0)
+        self.obs_stds = np.std(self.data[:self.index][0], axis=0)
+        
     def sample(self, batch_size):
         batch = random.sample(self.data, batch_size)
         return list(map(lambda x:torch.Tensor(np.array(x)).to(self.device), list(zip(*batch))))
@@ -112,11 +122,17 @@ class ProjectAgent:
         self.target_model = deepcopy(self.model).to(DEVICE)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=lr) # Standard optimizer
         
+        self.scale_reward = args.scale_reward if args is not None else SCALE_REWARD
+        self.scale_observation = args.scale_observation if args is not None else SCALE_OBSERVATION
+        self.obs_means = np.zeros(self.observation_space)
+        self.obs_stds = np.ones(self.observation_space)
+        
         if (args is not None and args.fast) or (args is None and FAST_ENV):
             from env_hiv_new import FastHIVPatient
         
         
     def act(self, observation, use_random=False):
+        observation = torch.Tensor(observation).unsqueeze(0).to(DEVICE)
         device = "cuda" if next(self.model.parameters()).is_cuda else "cpu"
         with torch.no_grad():
             Q = self.model(torch.Tensor(observation).unsqueeze(0).to(device))
@@ -158,6 +174,11 @@ class ProjectAgent:
     def gradient_step(self):
         if len(self.memory) > self.batch_size:
             X, A, R, Y, D = self.memory.sample(self.batch_size)
+            if self.scale_observation:
+                X = self._normalize_state(X)
+                Y = self._normalize_state(Y)
+            if self.scale_reward:
+                R = R/self.scale_reward
             # run through the target model
             QYmax = self.target_model(Y).max(1)[0].detach()
             update = torch.addcmul(R, 1-D, QYmax, value=self.gamma)
@@ -167,26 +188,6 @@ class ProjectAgent:
             loss.backward()
             self.optimizer.step()
     
-    def gradient_step_double(self):
-        '''
-        We test the Double DQN model from  Deep Reinforcement Learning with Double Q-Learning by Hasselt et al. (2015)
-        The difference lies in how the target values are computed for the update
-        Instead of using argmax Q_target for action selection, we use the current model to select the highest Q value action
-        The action is then evaluated using the target model like before
-
-        The results were not as good as the standard DQN model, so we kept the standard model for the final training.
-        '''
-        if len(self.memory) > self.batch_size:
-            X, A, R, Y, D = self.memory.sample(self.batch_size)
-            next_actions = self.model(Y).argmax(1).detach()
-            QYmax = self.target_model(Y).gather(1, next_actions.unsqueeze(1)).squeeze(1)
-            update = torch.addcmul(R, 1-D, QYmax, value=self.gamma)
-            QXA = self.model(X).gather(1, A.to(torch.long).unsqueeze(1))
-            loss = self.criterion(QXA, update.unsqueeze(1))
-            self.optimizer.zero_grad()
-            loss.backward()
-            self.optimizer.step()
-
     def train(self, env):
         episode_return = []
         episode = 0
@@ -212,6 +213,12 @@ class ProjectAgent:
 
             # Take a step in the environment
             next_state, reward, done, trunc, _ = env.step(action)
+            if self.scale_observation:
+                next_state = self._normalize_state(next_state)
+            
+            if self.scale_reward:
+                reward = reward/self.scale_reward
+                
             self.memory.append(state, action, reward, next_state, done)
             episode_cum_reward += reward
 
@@ -228,11 +235,14 @@ class ProjectAgent:
                 episode += 1
                 val_score = evaluate_agent(self, env=TimeLimit(FastHIVPatient(domain_randomization=False) if args.fast else HIVPatient(domain_randomization=False),
                                                                  max_episode_steps=MAX_EPISODES_STEPS), nb_episode=self.nb_episodes_test)
+                
                 print("Episode ", '{:3d}'.format(episode),
                       ", epsilon ", '{:6.2f}'.format(epsilon),
                       ", memory size ", '{:5d}'.format(len(self.memory)),
                       ", episode return ", '{:2e}'.format(episode_cum_reward),
                       ", Evaluation score  ", '{:2e}'.format(val_score),
+                      ", means observation ", self.memory.obs_means,
+                        ", stds observation ", self.memory.obs_stds,
                       sep='')
                 state, _ = env.reset()
                 
@@ -249,6 +259,14 @@ class ProjectAgent:
                 
             step += 1
         return episode_return
+    
+    def _normalize_state(self, state):
+        # Standardisation avec moyenne et écart-type (ajuster ces valeurs)
+        # running mean and std
+        state_mean = self.memory.obs_means
+        state_std = self.memory.obs_stds
+        return (state - state_mean) / (state_std + 1e-8)
+
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
@@ -270,6 +288,8 @@ if __name__ == "__main__":
     parser.add_argument("--fast", type=bool, default=FAST_ENV, help="Use fast environment")
     parser.add_argument("--neurons", type=int, default=NEURONS, help="Number of input neurons for the model")
     parser.add_argument("--nb_episodes_test", type=int, default=NB_EPSIODES_TEST, help="Number of episodes to test the model")
+    parser.add_argument("--scale_reward", type=float, default=SCALE_REWARD, help="Scale the reward")
+    parser.add_argument("--scale_observation", type=bool, default=SCALE_OBSERVATION, help="Scale the observation")
     args = parser.parse_args()
     
     

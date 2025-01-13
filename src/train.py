@@ -141,6 +141,8 @@ class ProjectAgent:
         
     def act(self, observation, use_random=False):
         observation = torch.Tensor(observation).unsqueeze(0).to(DEVICE)
+        if self.scale_observation:
+            observation = self._normalize_state(observation)
         device = "cuda" if next(self.model.parameters()).is_cuda else "cpu"
         with torch.no_grad():
             Q = self.model(torch.Tensor(observation).unsqueeze(0).to(device))
@@ -221,8 +223,6 @@ class ProjectAgent:
 
             # Take a step in the environment
             next_state, reward, done, trunc, _ = env.step(action)
-            if self.scale_observation:
-                next_state = self._normalize_state(next_state)
             
             if self.scale_reward:
                 reward = reward/self.scale_reward

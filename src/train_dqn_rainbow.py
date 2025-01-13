@@ -551,10 +551,10 @@ class ProjectAgent:
             u_index = (u + offset).view(-1)
 
             proj_dist.view(-1).index_add_(
-                0, l_index, (next_dist.view(-1)[:, i] * (u.float()-b).view(-1))
+                0, l_index, next_dist[:, i] * (u.float() - b).view(-1)
             )
             proj_dist.view(-1).index_add_(
-                0, u_index, (next_dist.view(-1)[:, i] * (b-l.float()).view(-1))
+                0, u_index, next_dist[:, i] * (b - l.float()).view(-1)
             )
         return proj_dist
 

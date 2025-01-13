@@ -30,7 +30,7 @@ LEARNING_RATE = 1e-3
 GRADIENT_STEPS = 3
 UPDATE_TARGET_FREQ = 200
 NEURONS = 256
-MODEL_PATH = "dqn.pt"
+MODEL_PATH = "dqn2.pt"
 
 SCALE_REWARD = int(1e9)
 SCALE_OBSERVATION = True
@@ -200,6 +200,7 @@ class ProjectAgent:
     
     def train(self, env):
         episode_return = []
+        val_scores = []
         episode = 0
         episode_cum_reward = 0
         state, _ = env.reset()
@@ -243,7 +244,7 @@ class ProjectAgent:
                 episode += 1
                 val_score = evaluate_agent(self, env=TimeLimit(FastHIVPatient(domain_randomization=False) if args.fast else HIVPatient(domain_randomization=False),
                                                                  max_episode_steps=MAX_EPISODES_STEPS), nb_episode=self.nb_episodes_test)
-                
+                val_scores.append(val_score)
                 print("Episode ", '{:3d}'.format(episode),
                       ", epsilon ", '{:6.2f}'.format(epsilon),
                       ", memory size ", '{:5d}'.format(len(self.memory)),
@@ -264,7 +265,7 @@ class ProjectAgent:
                 state = next_state
                 
             step += 1
-        return episode_return
+        return episode_return, val_scores
     
     def _normalize_state(self, state):
         # Standardisation avec moyenne et écart-type (ajuster ces valeurs)
@@ -312,10 +313,10 @@ if __name__ == "__main__":
         env=HIVPatient(domain_randomization=False), max_episode_steps=200
         )
         
-    episode_return = agent.train(env)
+    episode_return, val_scores = agent.train(env)
     print(episode_return)
     agent.save(args.model)
     print(f"Model saved at {args.model}")
-    print(f'Best model score: {max(episode_return)}')
+    print(f'Best model score: {max(val_scores)}')
 
 ## python src/train_dqn_new.py --model dqn.pt --episodes {EPISODES} --domain_randomization False --learning_rate {LEARNING_RATE} --gamma {GAMMA} --buffer_size {BUFFER_SIZE} --epsilon_min {EPSILON_MIN} --epsilon_max {EPSILON_MAX} --epsilon_decay_period {EPSILON_DECAY_PERIOD} --epsilon_delay_decay {EPSILON_DELAY_DECAY} --batch_size {BATCH_SIZE} --gradient_steps {GRADIENT_STEPS} --double False --update_target_freq {UPDATE_TARGET_FREQ} --fast True --neurons {NEURONS}

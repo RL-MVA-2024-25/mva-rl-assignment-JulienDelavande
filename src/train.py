@@ -275,7 +275,7 @@ class ProjectAgent:
         state_std = self.memory.obs_stds
         state_mean = torch.Tensor(state_mean).to(DEVICE)
         state_std = torch.Tensor(state_std).to(DEVICE)
-        return (state - state_mean) / (state_std + 1e-8)
+        return (state - state_mean) / state_std
 
 
 if __name__ == "__main__":

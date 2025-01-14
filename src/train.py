@@ -30,7 +30,7 @@ LEARNING_RATE = 1e-3
 GRADIENT_STEPS = 3
 UPDATE_TARGET_FREQ = 200
 NEURONS = 256
-MODEL_PATH = "dqn2.pt"
+MODEL_PATH = "dqn3.pt"
 
 SCALE_REWARD = int(1e9)
 SCALE_OBSERVATION = True
@@ -245,19 +245,23 @@ class ProjectAgent:
                 val_score = evaluate_agent(self, env=TimeLimit(FastHIVPatient(domain_randomization=False) if args.fast else HIVPatient(domain_randomization=False),
                                                                  max_episode_steps=MAX_EPISODES_STEPS), nb_episode=self.nb_episodes_test)
                 val_scores.append(val_score)
-                print("Episode ", '{:3d}'.format(episode),
-                      ", epsilon ", '{:6.2f}'.format(epsilon),
-                      ", memory size ", '{:5d}'.format(len(self.memory)),
-                      ", episode return ", '{:2e}'.format(episode_cum_reward),
-                      ", Evaluation score  ", '{:2e}'.format(val_score),
-                      sep='')
-                state, _ = env.reset()
                 
                 # Save the model if the score is better
                 if val_score > score:
                   score = val_score
                   self.best_model = deepcopy(self.model).to(DEVICE)
                   self.save(self.path)
+                  
+                print("Episode ", '{:3d}'.format(episode),
+                      ", epsilon ", '{:6.2f}'.format(epsilon),
+                      ", memory size ", '{:5d}'.format(len(self.memory)),
+                      ", episode return ", '{:2e}'.format(episode_cum_reward),
+                      ", Evaluation score  ", '{:2e}'.format(val_score),
+                      ", Best score ", '{:2e}'.format(score),
+                      sep='')
+                state, _ = env.reset()
+                
+         
                   
                 episode_return.append(episode_cum_reward)
                 episode_cum_reward = 0
@@ -315,7 +319,6 @@ if __name__ == "__main__":
         
     episode_return, val_scores = agent.train(env)
     print(episode_return)
-    agent.save(args.model)
     print(f"Model saved at {args.model}")
     print(f'Best model score: {max(val_scores)}')
 

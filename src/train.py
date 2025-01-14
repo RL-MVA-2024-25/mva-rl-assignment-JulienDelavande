@@ -282,7 +282,10 @@ class ProjectAgent:
     def _rescale_reward(self, reward):
         # Deal with tensor and gpu
         reward = torch.Tensor(reward).to(DEVICE)
-        return torch.log(reward + 2.5*1e4 +20000.0*(0.3**2 +0.7**2)) / torch.log((353200.0*1000)+(2.5*1e4 + 20000.0*(0.3**2 +0.7**2)))
+        return torch.log(reward + torch.tensor(2.5e4) + torch.tensor(20000.0) * (0.3**2 + 0.7**2)) / torch.log(
+            torch.tensor(353200.0 * 1000) + torch.tensor(2.5e4) + torch.tensor(20000.0) * (0.3**2 + 0.7**2)
+        )
+
 
 
 if __name__ == "__main__":

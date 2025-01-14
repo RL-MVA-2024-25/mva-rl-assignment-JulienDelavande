@@ -32,7 +32,7 @@ UPDATE_TARGET_FREQ = 200
 NEURONS = 256
 MODEL_PATH = "dqn3.pt"
 
-SCALE_REWARD = int(1e9)
+SCALE_REWARD = 10*np.log(5)
 SCALE_OBSERVATION = True
 
 DOUBLE_DQN = False
@@ -188,7 +188,7 @@ class ProjectAgent:
                 X = self._normalize_state(X)
                 Y = self._normalize_state(Y)
             if self.scale_reward:
-                R = R/self.scale_reward
+                R = (np.log(R) - np.log(3e6)) / self.scale_reward
             # run through the target model
             QYmax = self.target_model(Y).max(1)[0].detach()
             update = torch.addcmul(R, 1-D, QYmax, value=self.gamma)
@@ -226,7 +226,7 @@ class ProjectAgent:
             next_state, reward, done, trunc, _ = env.step(action)
             
             if self.scale_reward:
-                reward = reward/self.scale_reward
+                reward = (np.log(reward) - np.log(3e6)) / self.scale_reward
                 
             self.memory.append(state, action, reward, next_state, done)
             episode_cum_reward += reward

@@ -11,6 +11,8 @@ import torch.nn as nn
 from copy import deepcopy
 import os
 
+import torch
+
 try:
     from env_hiv_new import FastHIVPatient
 except:
@@ -224,9 +226,6 @@ class ProjectAgent:
 
             # Take a step in the environment
             next_state, reward, done, trunc, _ = env.step(action)
-            
-            if self.scale_reward:
-                reward = self._rescale_reward(reward)
                 
             self.memory.append(state, action, reward, next_state, done)
             episode_cum_reward += reward
@@ -281,7 +280,9 @@ class ProjectAgent:
         return (state - state_mean) / state_std
     
     def _rescale_reward(self, reward):
-        return (np.log(reward + 2.5*1e4 +20000.0*(0.3**2 +0.7**2))) / np.log((353200.0*1000)+(2.5*1e4 + 20000.0*(0.3**2 +0.7**2)))
+        # Deal with tensor and gpu
+        reward = torch.Tensor(reward).to(DEVICE)
+        return torch.log(reward + 2.5*1e4 +20000.0*(0.3**2 +0.7**2)) / torch.log((353200.0*1000)+(2.5*1e4 + 20000.0*(0.3**2 +0.7**2)))
 
 
 if __name__ == "__main__":
